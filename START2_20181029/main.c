@@ -606,10 +606,14 @@ void *ThreadSendData(void)
 {
     unsigned int spiLength = 0;
     const int delayTime = 1000;
+    struct jpeg_destination_mgr mem_dst;
+    unsigned char mem_jpeg[512];
     PR("Hello world, here's thread!\n");
 
     /* Send jpeg data of page one */
     while (CompressProcess.step == COMPRESS_STEP_P1_ENCODE) {
+        mem_dst = *JPEGCompressOne.dest;
+        mem_dst.term_destination(&JPEGCompressOne);
         if (JpegLengthOne >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationOne + spiLength, 512);
             spiLength += 512;
@@ -655,6 +659,8 @@ void *ThreadSendData(void)
     spiLength = 0;
     sem_wait(&scanSem);
     while (CompressProcess.step == COMPRESS_STEP_P2_ENCODE) {
+        mem_dst = *JPEGCompressTwo.dest;
+        mem_dst.term_destination(&JPEGCompressTwo);
         if (JpegLengthTwo >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationTwo + spiLength, 512);
             spiLength += 512;
