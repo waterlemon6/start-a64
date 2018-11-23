@@ -198,6 +198,6 @@ void KernelVIDEODisable(void)
 void KernelVIDEOReset(void)
 {
     KernelVIDEODisable();
-    usleep(1000);
+    usleep(3000);
     KernelVIDEOEnable();
 }

@@ -90,6 +90,8 @@ int main(int argc, char *argv[])
 
 pthread_t thread;
 pthread_mutex_t scanMutex;
+pthread_mutex_t sendPicture1Mutex;
+pthread_mutex_t sendPicture2Mutex;
 pthread_cond_t scanCond;
 sem_t scanSem;
 
@@ -175,6 +177,8 @@ int MainProcess(int dpi, char color, int videoPortOffset)
     INIT_LIST_HEAD(&queueHead1);
     INIT_LIST_HEAD(&queueHead2);
     pthread_mutex_init(&scanMutex, NULL);
+    pthread_mutex_init(&sendPicture1Mutex, NULL);
+    pthread_mutex_init(&sendPicture2Mutex, NULL);
     pthread_cond_init(&scanCond, NULL);
     sem_init(&scanSem, 0, 0);
 
@@ -415,7 +419,9 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                             shiftPicture = list_entry(queueHead1.next, struct list_shift_picture, queue);
                             if ((CompressProcess.compressLines >= CompressProcess.imageAttr.topEdge) && (CompressProcess.compressLines < CompressProcess.imageAttr.bottomEdge)) {
                                 CompressProcessArrangeOneLine(shiftPicture->data, arrange, &CompressProcess.imageAttr);
+                                pthread_mutex_lock(&sendPicture1Mutex);
                                 jpeg_write_scanlines(&JPEGCompressOne, &arrange, 1);
+                                pthread_mutex_unlock(&sendPicture1Mutex);
                             }
                             list_del(&(shiftPicture->queue));
                             list_add_tail(&(shiftPicture->queue), &queueHead2);
@@ -425,8 +431,8 @@ int MainProcess(int dpi, char color, int videoPortOffset)
 
                     /* quit, if lines compressed are enough. */
                     if (CompressProcess.compressLines >= CompressProcess.maxScanLines) {
-                        CompressProcess.step = COMPRESS_STEP_P2_ENCODE;
                         jpeg_finish_compress(&JPEGCompressOne);
+                        CompressProcess.step = COMPRESS_STEP_P2_ENCODE;
                         PR("first picture.\n");
                         break;
                     }
@@ -454,7 +460,9 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                         shiftPicture = list_entry(queueHead2.next, struct list_shift_picture, queue);
                         if ((CompressProcess.compressLines >= CompressProcess.imageAttr.topEdge) && (CompressProcess.compressLines < CompressProcess.imageAttr.bottomEdge)) {
                             CompressProcessArrangeOneLine(shiftPicture->data, arrange, &CompressProcess.imageAttr);
+                            pthread_mutex_lock(&sendPicture2Mutex);
                             jpeg_write_scanlines(&JPEGCompressTwo, &arrange, 1);
+                            pthread_mutex_unlock(&sendPicture2Mutex);
                         }
                         list_del(&(shiftPicture->queue));
                         free(shiftPicture);
@@ -463,8 +471,8 @@ int MainProcess(int dpi, char color, int videoPortOffset)
 
                     /* quit, if lines compressed are enough. */
                     if (CompressProcess.compressLines >= CompressProcess.maxScanLines) {
-                        CompressProcess.step = COMPRESS_STEP_IDLE;
                         jpeg_finish_compress(&JPEGCompressTwo);
+                        CompressProcess.step = COMPRESS_STEP_IDLE;
                         PR("second picture.\n");
                         break;
                     }
@@ -517,8 +525,8 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 spiBuffer[4] = 0x00;
                 spiBuffer[5] = 0x02;
                 spiBuffer[6] = 0x00;
-                spiBuffer[7] = 0x00;
-                spiBuffer[8] = 0x01;
+                spiBuffer[7] = 0x01;
+                spiBuffer[8] = 0x00;
                 KernelSPISendPackage(spiBuffer, 512);
                 usleep(2000);
                 break;
@@ -607,17 +615,18 @@ void *ThreadSendData(void)
     unsigned int spiLength = 0;
     const int delayTime = 1000;
     struct jpeg_destination_mgr mem_dst;
-    unsigned char mem_jpeg[512];
     PR("Hello world, here's thread!\n");
 
     /* Send jpeg data of page one */
     while (CompressProcess.step == COMPRESS_STEP_P1_ENCODE) {
+        pthread_mutex_lock(&sendPicture1Mutex);
         mem_dst = *JPEGCompressOne.dest;
         mem_dst.term_destination(&JPEGCompressOne);
         if (JpegLengthOne >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationOne + spiLength, 512);
             spiLength += 512;
         }
+        pthread_mutex_unlock(&sendPicture1Mutex);
         usleep(delayTime);
     }
 
@@ -659,12 +668,14 @@ void *ThreadSendData(void)
     spiLength = 0;
     sem_wait(&scanSem);
     while (CompressProcess.step == COMPRESS_STEP_P2_ENCODE) {
+        pthread_mutex_lock(&sendPicture2Mutex);
         mem_dst = *JPEGCompressTwo.dest;
         mem_dst.term_destination(&JPEGCompressTwo);
         if (JpegLengthTwo >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationTwo + spiLength, 512);
             spiLength += 512;
         }
+        pthread_mutex_unlock(&sendPicture2Mutex);
         usleep(delayTime);
     }
 
