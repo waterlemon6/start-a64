@@ -29,7 +29,7 @@
 #define CIS_EDGE_300DPI         20
 
 #define CIS_WIDTH_600DPI        5184
-#define CIS_EDGE_600DPI         40
+#define CIS_EDGE_600DPI         41
 
 /* Available width per page, decided by cis and video port.
    Available height per page, decided by video port and frame height. */

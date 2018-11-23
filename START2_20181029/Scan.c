@@ -39,7 +39,6 @@ int ScanLinesGet(int dpi, int depth)
 
 int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess)
 {
-    unsigned short edge = 0;
     unsigned short offset = 0;
 
     CompressProcess->imageAttr.color = ConfigMessage->color;
@@ -61,7 +60,6 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
     switch (CompressProcess->imageAttr.dpi) {
         case 200:
             offset = CIS_WIDTH_200DPI;
-            edge = CIS_EDGE_200DPI;
             if(CompressProcess->imageAttr.depth == 3) {
                 CompressProcess->frame = 1;
                 CompressProcess->rowsPerLine = 3;
@@ -73,7 +71,6 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
             break;
         case 300:
             offset = CIS_WIDTH_300DPI;
-            edge = CIS_EDGE_300DPI;
             if(CompressProcess->imageAttr.depth == 3) {
                 CompressProcess->frame = 2;
                 CompressProcess->rowsPerLine = 3;
@@ -85,7 +82,6 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
             break;
         case 600:
             offset = CIS_WIDTH_600DPI;
-            edge = CIS_EDGE_600DPI;
             if(CompressProcess->imageAttr.depth == 3) {
                 CompressProcess->frame = 6;
                 CompressProcess->rowsPerLine = 6;
@@ -101,14 +97,14 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
 
     switch (page) {
         case PAGE_TOP:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset + edge ;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset + edge ;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset;
             CompressProcess->imageAttr.topEdge = ConfigMessage->topUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->topUpEdge + ConfigMessage->topHeight;
             break;
         case PAGE_BOTTOM:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge + edge ;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge + edge ;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge;
             CompressProcess->imageAttr.topEdge = ConfigMessage->bottomUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->bottomUpEdge + ConfigMessage->bottomHeight;
             break;

@@ -389,7 +389,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 CompressProcess.scanLines = 0;
                 CompressProcess.shiftLines = 0;
                 CompressProcess.compressLines = 0;
-                CompressProcess.imagePosition = originalImage;
+                CompressProcess.imagePosition = originalImage + videoPortOffset;
                 JpegStart(&JPEGCompressOne, &CompressProcess.imageAttr);
                 pthread_create(&thread, NULL, (void*)ThreadSendData, NULL);
 
