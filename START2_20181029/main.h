@@ -1,14 +1,14 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include "/usr/local/libjpeg-turbo_arm/include/jpeglib.h"
+#include "/home/waterlemon/jpeg/libjpeg-turbo-2.0.1/a64-64bit/a64/jpeglib.h"
 
 /* DEBUG LEVEL
  * 0 - DEBUG VERSION. PRINT SYSTEM INFORMATION, TIMES TAKEN IN EACH COMMAND, PACKAGES SENT VIA SPI.
  * 1 - DEBUG VERSION. PRINT SYSTEM INFORMATION.
  * 2 - RELEASE VERSION. PRINT NOTHING.
  */
-#define DEBUG_LEVEL 2
+#define DEBUG_LEVEL 0
 
 #if DEBUG_LEVEL <= 1
 #define PR(...) printf(__VA_ARGS__)

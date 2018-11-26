@@ -1,7 +1,7 @@
-#include <zconf.h>
 #include <sys/ioctl.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "KernelVideo.h"
 
 int m_videoDescriptor;

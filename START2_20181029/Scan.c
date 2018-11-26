@@ -7,37 +7,36 @@ extern int Cr_RTable[256], Cr_GTable[256], Cr_BTable[256];
 extern int Cb_RTable[256], Cb_GTable[256], Cb_BTable[256];
 extern unsigned char Y_YTable[256];
 
-__time_t scanTime0, scanTime1;
+struct timeval tv_scan1, tv_scan2;
 
 void ScanTimeSet(void)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    scanTime0 = tv.tv_sec * 1000000 + tv.tv_usec;
+    gettimeofday(&tv_scan1, NULL);
+    PR("scan sec:%lu, usec:%lu\n", tv_scan1.tv_sec, tv_scan1.tv_usec);
 }
 
-int ScanLinesGet(int dpi, int depth)
+long ScanLinesGet(int dpi, int depth)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    scanTime1 = tv.tv_sec * 1000000 + tv.tv_usec - scanTime0;
+    __time_t scanTime;
+    gettimeofday(&tv_scan2, NULL);
+    scanTime = (tv_scan2.tv_sec - tv_scan1.tv_sec) * 1000000 + tv_scan2.tv_usec - tv_scan1.tv_usec;
 
     switch (dpi) {
         case 200:
             if (depth == 3)
-                return ((scanTime1 / SCAN_TIME_PER_LINE_200DPI) / depth);
+                return ((scanTime / SCAN_TIME_PER_LINE_200DPI) / depth);
             else
-                return (scanTime1 / SCAN_TIME_PER_LINE_200DPI_ONE_CHANNEL);
+                return (scanTime / SCAN_TIME_PER_LINE_200DPI_ONE_CHANNEL);
         case 300:
-            return ((scanTime1 / SCAN_TIME_PER_LINE_300DPI) / depth);
+            return ((scanTime / SCAN_TIME_PER_LINE_300DPI) / depth);
         case 600:
-            return ((scanTime1 / SCAN_TIME_PER_LINE_600DPI) / depth);
+            return ((scanTime / SCAN_TIME_PER_LINE_600DPI) / depth);
         default:
             return 0;
     }
 }
 
-int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess)
+int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess, int videoPortOffset)
 {
     unsigned short offset = 0;
 
@@ -97,14 +96,14 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
 
     switch (page) {
         case PAGE_TOP:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset + videoPortOffset;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset + videoPortOffset;
             CompressProcess->imageAttr.topEdge = ConfigMessage->topUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->topUpEdge + ConfigMessage->topHeight;
             break;
         case PAGE_BOTTOM:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge + videoPortOffset;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge + videoPortOffset;
             CompressProcess->imageAttr.topEdge = ConfigMessage->bottomUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->bottomUpEdge + ConfigMessage->bottomHeight;
             break;

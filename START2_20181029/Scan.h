@@ -13,11 +13,11 @@ typedef struct CompressProcess_t{
     ImageAttributionsTypeDef imageAttr;
 
     int step;                       // Compress step.
-    int scanLines;                  // Scan lines, decide by the scan time per line of FPGA.
-    int shiftLines;                 // Shift lines, lines after memory copying in queue.
-    int compressLines;              // Compress lines, lines processed by JPEG.
+    long scanLines;                 // Scan lines, decide by the scan time per line of FPGA.
+    long shiftLines;                 // Shift lines, lines after memory copying in queue.
+    long compressLines;              // Compress lines, lines processed by JPEG.
 
-    int maxScanLines;               // Max Scan Lines of the top page and the bottom page.
+    long maxScanLines;               // Max Scan Lines of the top page and the bottom page.
     int frame;                      // How many frames will be sampled this time.
     int rowsPerLine;
     unsigned char *imagePosition;   // Image position of the original picture, used in memory copy.
@@ -30,9 +30,9 @@ enum {
 };
 
 void ScanTimeSet(void);
-int ScanLinesGet(int dpi, int depth);
+long ScanLinesGet(int dpi, int depth);
 
-int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess);
+int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess, int videoPortOffset);
 void CompressProcessArrangeOneLine(const unsigned char *src, unsigned char *dst, ImageAttributionsTypeDef *attr);
 
 #endif

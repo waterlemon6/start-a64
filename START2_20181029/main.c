@@ -29,16 +29,16 @@ int main(int argc, char *argv[])
 
     switch(argc) {
         case 2:
-            dpi = strtol(argv[1], NULL, 10);
+            dpi = (int) strtol(argv[1], NULL, 10);
             break;
         case 3:
-            dpi = strtol(argv[1], NULL, 10);
+            dpi = (int) strtol(argv[1], NULL, 10);
             color = argv[2][0];
             break;
         case 4:
-            dpi = strtol(argv[1], NULL, 10);
+            dpi = (int) strtol(argv[1], NULL, 10);
             color = argv[2][0];
-            videoPortOffset = strtol(argv[3], NULL, 10);
+            videoPortOffset = (int) strtol(argv[3], NULL, 10);
         default:
             break;
     }
@@ -320,7 +320,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                     KernelSPIReadPackage(spiBuffer, 64);
 
                     if (spiBuffer[63] == 0) {
-                        PR("package %d\n", updatePackCount);
+                        PR("package %d\n", (int)updatePackCount);
                         memcpy(updateData + updatePackCount*62, spiBuffer, 62);
                         updatePackCount++;
                         updateData = realloc(updateData, (updatePackCount+1)*62);
@@ -346,7 +346,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                         fclose(stream);*/
 
                         if (!updateFail) {
-                            UpdateDecompress(updateData, updatePackCount*62);
+                            UpdateDecompress(updateData, (unsigned int) (updatePackCount * 62));
                             memset(spiBuffer, 0xFE, 512);
                         }
                         else
@@ -375,7 +375,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
             case STATE_MACHINE_SCAN:
                 /* Compress page one if it's available. */
                 PrinterScanShowConfigMessage(&ConfigMessage);
-                if (!CompressProcessPrepare(ConfigMessage.pageOne, &ConfigMessage, &CompressProcess)) {
+                if (!CompressProcessPrepare(ConfigMessage.pageOne, &ConfigMessage, &CompressProcess, videoPortOffset)) {
                     PR("Failed in compress process preparing, page one.\n");
                     break;
                 }
@@ -389,13 +389,17 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 CompressProcess.scanLines = 0;
                 CompressProcess.shiftLines = 0;
                 CompressProcess.compressLines = 0;
-                CompressProcess.imagePosition = originalImage + videoPortOffset;
+                //CompressProcess.imagePosition = originalImage + videoPortOffset;
+                CompressProcess.imagePosition = originalImage;
                 JpegStart(&JPEGCompressOne, &CompressProcess.imageAttr);
                 pthread_create(&thread, NULL, (void*)ThreadSendData, NULL);
 
                 while (1) {
                     /* Shift lines to the queue, while lines scanned are more than lines shifted. */
-                    CompressProcess.scanLines = ScanLinesGet(CompressProcess.imageAttr.dpi, CompressProcess.imageAttr.depth);
+                    CompressProcess.scanLines =  ScanLinesGet(CompressProcess.imageAttr.dpi, CompressProcess.imageAttr.depth);
+                    if(CompressProcess.scanLines > 8000)
+                        PR("error, lines: %lu", CompressProcess.scanLines);
+
                     while (CompressProcess.scanLines > CompressProcess.shiftLines + 60) {
                         if (CompressProcess.shiftLines >= CompressProcess.maxScanLines)
                             break;
@@ -407,7 +411,9 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                         CompressProcess.imagePosition += VIDEO_PORT_WIDTH * CompressProcess.rowsPerLine;
                         CompressProcess.shiftLines++;
                         if (!(CompressProcess.shiftLines*CompressProcess.rowsPerLine % 7800) && CompressProcess.frame) {
-                            PR("New frame!\n");
+                            struct timeval tv;
+                            gettimeofday(&tv, NULL);
+                            PR("New frame! lines: %lu, sec %lu, usec:%lu\n", CompressProcess.scanLines, tv.tv_sec, tv.tv_usec);
                             CompressProcess.imagePosition = originalImage;
                             CompressProcess.frame --;
                         }
@@ -439,7 +445,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 }
 
                 /* Compress page two if it's available. */
-                if (!CompressProcessPrepare(ConfigMessage.pageTwo, &ConfigMessage, &CompressProcess)) {
+                if (!CompressProcessPrepare(ConfigMessage.pageTwo, &ConfigMessage, &CompressProcess, videoPortOffset)) {
                     PR("Failed in compress process preparing, page two.\n");
                     while (!list_empty(&queueHead2)) {
                         shiftPicture = list_entry(queueHead2.next, struct list_shift_picture, queue);

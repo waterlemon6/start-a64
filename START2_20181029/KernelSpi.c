@@ -1,5 +1,5 @@
 #include <sys/ioctl.h>
-#include <zconf.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "KernelSpi.h"
 #include "main.h"
