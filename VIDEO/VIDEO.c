@@ -261,7 +261,7 @@ static struct file_operations video_fops = {
 	.open 				= video_open,
 	.write				= video_write,  
 	.release			= video_release,
-	.compat_ioctl		= video_ioctl,
+	.unlocked_ioctl		= video_ioctl,
 	.mmap				= video_mmap,
 };	
 

@@ -33,7 +33,7 @@ static void led_exit(void);
 
 static struct file_operations led_fops = {
 	.owner = THIS_MODULE,
-	.compat_ioctl = led_ioctl,
+	.unlocked_ioctl = led_ioctl,
 	.open = led_open,
 	.release = led_release,
 };

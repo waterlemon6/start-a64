@@ -43,7 +43,7 @@ static int jtag_mmap(struct file *filp, struct vm_area_struct *vma);
 
 static struct file_operations jtag_fops = {
 	.owner = THIS_MODULE,
-	.compat_ioctl = jtag_ioctl,
+	.unlocked_ioctl = jtag_ioctl,
 	.open = jtag_open,
 	.release = jtag_release,
 	.mmap = jtag_mmap,

@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <zconf.h>
-#include <sys/mman.h>
+#include <unistd.h>
 
 #include "jrunner.h"
 #include "KernelInterface.h"
@@ -33,7 +32,7 @@ int main()
     fread(rbfData, rbfLength, 1, stream);
     printf("The rbf is read.\n");
 
-    JrunnerMain(rbfData, rbfLength);
+    JrunnerMain(rbfData, (int) rbfLength);
     printf("The rbf is imported.\n");
 
     free(rbfData);

@@ -464,7 +464,7 @@ static struct file_operations spi_fops = {
 	.owner = THIS_MODULE,
 	.open = spi_open,
 	.release = spi_release,
-	.compat_ioctl = spi_ioctl,
+	.unlocked_ioctl = spi_ioctl,
 	.read = spi_read,
 	.write = spi_write,
 };
