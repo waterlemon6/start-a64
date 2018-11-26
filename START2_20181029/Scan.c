@@ -37,7 +37,7 @@ int ScanLinesGet(int dpi, int depth)
     }
 }
 
-int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess)
+int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess, int videoPortOffset)
 {
     unsigned short offset = 0;
 
@@ -97,14 +97,14 @@ int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessa
 
     switch (page) {
         case PAGE_TOP:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->topLeftEdge + offset + videoPortOffset;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->topRightEdge + offset + videoPortOffset;
             CompressProcess->imageAttr.topEdge = ConfigMessage->topUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->topUpEdge + ConfigMessage->topHeight;
             break;
         case PAGE_BOTTOM:
-            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge;
-            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge;
+            CompressProcess->imageAttr.leftEdge = ConfigMessage->bottomLeftEdge + videoPortOffset;
+            CompressProcess->imageAttr.rightEdge = ConfigMessage->bottomRightEdge + videoPortOffset;
             CompressProcess->imageAttr.topEdge = ConfigMessage->bottomUpEdge;
             CompressProcess->imageAttr.bottomEdge = ConfigMessage->bottomUpEdge + ConfigMessage->bottomHeight;
             break;

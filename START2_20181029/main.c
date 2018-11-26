@@ -375,7 +375,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
             case STATE_MACHINE_SCAN:
                 /* Compress page one if it's available. */
                 PrinterScanShowConfigMessage(&ConfigMessage);
-                if (!CompressProcessPrepare(ConfigMessage.pageOne, &ConfigMessage, &CompressProcess)) {
+                if (!CompressProcessPrepare(ConfigMessage.pageOne, &ConfigMessage, &CompressProcess, videoPortOffset)) {
                     PR("Failed in compress process preparing, page one.\n");
                     break;
                 }
@@ -439,7 +439,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 }
 
                 /* Compress page two if it's available. */
-                if (!CompressProcessPrepare(ConfigMessage.pageTwo, &ConfigMessage, &CompressProcess)) {
+                if (!CompressProcessPrepare(ConfigMessage.pageTwo, &ConfigMessage, &CompressProcess, videoPortOffset)) {
                     PR("Failed in compress process preparing, page two.\n");
                     while (!list_empty(&queueHead2)) {
                         shiftPicture = list_entry(queueHead2.next, struct list_shift_picture, queue);
