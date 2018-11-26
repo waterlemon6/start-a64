@@ -30,9 +30,9 @@ static void TMS_WRITE(int x)
         *jtagGPIODataAdress &= ~(1 << 19);
 }
 
-static unsigned int TDO_READ(void)
+static unsigned int TDO_READ(void) // BOOL format is OK.
 {
-    return ((*jtagGPIODataAdress >> 18) & 0x01);
+    return (*jtagGPIODataAdress & (1 << 18));
 }
 
 void KernelJTAGSetDescriptor(int jtagDescriptor);
