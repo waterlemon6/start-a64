@@ -177,25 +177,29 @@ void bsp_csi_set_buffer(unsigned char *buf)
 #define GPIOH(n) PH_BASE+n
 #define GPIOL(n) PL_BASE+n
 
-#define MOSI_DATA_ON	gpio_direction_output(GPIOE(12), 1)
-#define MOSI_DATA_OFF	gpio_direction_output(GPIOE(12), 0)
-#define MOSI_REG_ON		gpio_direction_output(GPIOE(13), 1)
-#define MOSI_REG_OFF	gpio_direction_output(GPIOE(13), 0)
-#define SCK_ON			gpio_direction_output(GPIOE(14), 1)
-#define SCK_OFF			gpio_direction_output(GPIOE(14), 0)
-#define CSN_ON			gpio_direction_output(GPIOE(15), 1)
-#define CSN_OFF			gpio_direction_output(GPIOE(15), 0)
+#define SPI_GPIO_DATA_ADDRESS (0x01C20800 + 0xA0)
+volatile uint32_t *spi_gpio_base;
+
+#define MOSI_DATA_ON	do{*spi_gpio_base |= (1 << 12); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(12), 1)
+#define MOSI_DATA_OFF	do{*spi_gpio_base &= ~(1 << 12); asm("nop; nop; nop; nop");}while(0)	//gpio_direction_output(GPIOE(12), 0)
+#define MOSI_REG_ON		do{*spi_gpio_base |= (1 << 13); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(13), 1)
+#define MOSI_REG_OFF	do{*spi_gpio_base &= ~(1 << 13); asm("nop; nop; nop; nop");}while(0)	//gpio_direction_output(GPIOE(13), 0)
+#define SCK_ON			do{*spi_gpio_base |= (1 << 14); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(14), 1)
+#define SCK_OFF			do{*spi_gpio_base &= ~(1 << 14); asm("nop; nop; nop; nop");}while(0)	//gpio_direction_output(GPIOE(14), 0)
+#define CSN_ON			do{*spi_gpio_base |= (1 << 15); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(15), 1)
+#define CSN_OFF			do{*spi_gpio_base &= ~(1 << 15); asm("nop; nop; nop; nop");}while(0)	//gpio_direction_output(GPIOE(15), 0)
 
 void spi_gpio_init(void)
 {
+	spi_gpio_base = ioremap_nocache(SPI_GPIO_DATA_ADDRESS, 4);
 	gpio_request(GPIOE(12), NULL);
 	gpio_request(GPIOE(13), NULL);
 	gpio_request(GPIOE(14), NULL);
 	gpio_request(GPIOE(15), NULL);
-	CSN_ON;
-	SCK_OFF;
-	MOSI_DATA_OFF;
-	MOSI_REG_OFF;
+	gpio_direction_output(GPIOE(12), 0);
+	gpio_direction_output(GPIOE(13), 0);
+	gpio_direction_output(GPIOE(14), 0);
+	gpio_direction_output(GPIOE(15), 1);
 }
 
 void spi_reg_write_word(unsigned int data)
@@ -348,8 +352,8 @@ static int video_init(void)
 	memset(imageBuf, 0, VIDEO_PORT_WIDTH * VIDEO_PORT_HEIGHT);
 
 	misc_register(&video_miscdev);
-	spi_gpio_init();
 	bsp_csi_init();
+	spi_gpio_init();
 
 	return 0;
 }
