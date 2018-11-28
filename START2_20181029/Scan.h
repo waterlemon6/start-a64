@@ -31,9 +31,9 @@ enum {
 
 void ScanTimeSet(void);
 long ScanLinesGet(int dpi, int depth);
-void ScanTimeShow(void);
 
 int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess, int videoPortOffset);
+void CompressProcessShiftPicture(unsigned char *pic1, unsigned char *pic2, unsigned char *src, ImageAttributionsTypeDef *attr);
 void CompressProcessArrangeOneLine(const unsigned char *src, unsigned char *dst, ImageAttributionsTypeDef *attr);
 
 #endif

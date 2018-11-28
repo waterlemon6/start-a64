@@ -97,9 +97,10 @@ sem_t scanSem;
 
 struct list_shift_picture{
     struct list_head queue;
-    unsigned char data[VIDEO_PORT_WIDTH * 6];
+    unsigned char data[VIDEO_PORT_WIDTH * 3];
 };
-struct list_shift_picture *shiftPicture;
+struct list_shift_picture *shiftPicture1;
+struct list_shift_picture *shiftPicture2;
 struct list_head queueHead1;
 struct list_head queueHead2;
 
@@ -144,7 +145,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
     LightAdjustmentTypeDef LightAdjustmentHandler;
     CorrectionParaTypeDef CorrectionParaHandle;
     unsigned char *originalImage = NULL;
-    unsigned char *arrange = malloc(VIDEO_PORT_WIDTH * 6);
+    unsigned char *arrange = malloc(VIDEO_PORT_WIDTH * 3);
     unsigned char *updateData = NULL;
     size_t updatePackCount = 0;
     int updateFail = 0;
@@ -397,18 +398,24 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 while (1) {
                     /* Shift lines to the queue, while lines scanned are more than lines shifted. */
                     CompressProcess.scanLines = ScanLinesGet(CompressProcess.imageAttr.dpi, CompressProcess.imageAttr.depth);
-                    if(CompressProcess.scanLines > 8000) {
-                        ScanTimeShow();
+                    if(CompressProcess.scanLines > 8000)
                         PR("Error, lines: %lu", CompressProcess.scanLines);
-                    }
 
                     while (CompressProcess.scanLines > CompressProcess.shiftLines + 60) {
                         if (CompressProcess.shiftLines >= CompressProcess.maxScanLines)
                             break;
 
-                        shiftPicture = malloc(sizeof(struct list_shift_picture));
-                        memcpy(shiftPicture->data, CompressProcess.imagePosition, (size_t) (VIDEO_PORT_WIDTH * CompressProcess.rowsPerLine));
-                        list_add_tail(&(shiftPicture->queue), &queueHead1);
+                        shiftPicture1 = malloc(sizeof(struct list_shift_picture));
+                        shiftPicture2 = malloc(sizeof(struct list_shift_picture));
+                        CompressProcessShiftPicture(shiftPicture2->data, shiftPicture1->data, CompressProcess.imagePosition, &CompressProcess.imageAttr);
+                        if(ConfigMessage.pageOne == PAGE_TOP) {
+                            list_add_tail(&(shiftPicture1->queue), &queueHead1);
+                            list_add_tail(&(shiftPicture2->queue), &queueHead2);
+                        }
+                        else {
+                            list_add_tail(&(shiftPicture1->queue), &queueHead2);
+                            list_add_tail(&(shiftPicture2->queue), &queueHead1);
+                        }
 
                         CompressProcess.imagePosition += VIDEO_PORT_WIDTH * CompressProcess.rowsPerLine;
                         CompressProcess.shiftLines++;
@@ -424,15 +431,15 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                     /* Compress lines from the queue, if lines shifted are more than lines compressed. */
                     if (CompressProcess.shiftLines > CompressProcess.compressLines) {
                         if (!list_empty(&queueHead1)) {
-                            shiftPicture = list_entry(queueHead1.next, struct list_shift_picture, queue);
+                            shiftPicture1 = list_entry(queueHead1.next, struct list_shift_picture, queue);
                             if ((CompressProcess.compressLines >= CompressProcess.imageAttr.topEdge) && (CompressProcess.compressLines < CompressProcess.imageAttr.bottomEdge)) {
-                                CompressProcessArrangeOneLine(shiftPicture->data, arrange, &CompressProcess.imageAttr);
+                                CompressProcessArrangeOneLine(shiftPicture1->data, arrange, &CompressProcess.imageAttr);
                                 pthread_mutex_lock(&sendPicture1Mutex);
                                 jpeg_write_scanlines(&JPEGCompressOne, &arrange, 1);
                                 pthread_mutex_unlock(&sendPicture1Mutex);
                             }
-                            list_del(&(shiftPicture->queue));
-                            list_add_tail(&(shiftPicture->queue), &queueHead2);
+                            list_del(&(shiftPicture1->queue));
+                            free(shiftPicture1);
                             CompressProcess.compressLines ++;
                         }
                     }
@@ -450,9 +457,9 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 if (!CompressProcessPrepare(ConfigMessage.pageTwo, &ConfigMessage, &CompressProcess, videoPortOffset)) {
                     PR("Failed in compress process preparing, page two.\n");
                     while (!list_empty(&queueHead2)) {
-                        shiftPicture = list_entry(queueHead2.next, struct list_shift_picture, queue);
-                        list_del(&(shiftPicture->queue));
-                        free(shiftPicture);
+                        shiftPicture2 = list_entry(queueHead2.next, struct list_shift_picture, queue);
+                        list_del(&(shiftPicture2->queue));
+                        free(shiftPicture2);
                     }
                     break;
                 }
@@ -465,15 +472,15 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 while (1) {
                     /* Compress lines from the queue. */
                     if (!list_empty(&queueHead2)) {
-                        shiftPicture = list_entry(queueHead2.next, struct list_shift_picture, queue);
+                        shiftPicture2 = list_entry(queueHead2.next, struct list_shift_picture, queue);
                         if ((CompressProcess.compressLines >= CompressProcess.imageAttr.topEdge) && (CompressProcess.compressLines < CompressProcess.imageAttr.bottomEdge)) {
-                            CompressProcessArrangeOneLine(shiftPicture->data, arrange, &CompressProcess.imageAttr);
+                            CompressProcessArrangeOneLine(shiftPicture2->data, arrange, &CompressProcess.imageAttr);
                             pthread_mutex_lock(&sendPicture2Mutex);
                             jpeg_write_scanlines(&JPEGCompressTwo, &arrange, 1);
                             pthread_mutex_unlock(&sendPicture2Mutex);
                         }
-                        list_del(&(shiftPicture->queue));
-                        free(shiftPicture);
+                        list_del(&(shiftPicture2->queue));
+                        free(shiftPicture2);
                         CompressProcess.compressLines ++;
                     }
 
