@@ -180,6 +180,11 @@ void bsp_csi_set_buffer(unsigned char *buf)
 #define SPI_GPIO_DATA_ADDRESS (0x01C20800 + 0xA0)
 volatile uint32_t *spi_gpio_base;
 
+#define MOSI_DATA_RESET	gpio_direction_output(GPIOE(12), 0)
+#define MOSI_REG_RESET	gpio_direction_output(GPIOE(13), 0)
+#define SCK_RESET		gpio_direction_output(GPIOE(14), 0)
+#define CSN_RESET		gpio_direction_output(GPIOE(15), 1)
+
 #define MOSI_DATA_ON	do{*spi_gpio_base |= (1 << 12); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(12), 1)
 #define MOSI_DATA_OFF	do{*spi_gpio_base &= ~(1 << 12); asm("nop; nop; nop; nop");}while(0)	//gpio_direction_output(GPIOE(12), 0)
 #define MOSI_REG_ON		do{*spi_gpio_base |= (1 << 13); asm("nop; nop; nop; nop");}while(0)		//gpio_direction_output(GPIOE(13), 1)
@@ -196,10 +201,10 @@ void spi_gpio_init(void)
 	gpio_request(GPIOE(13), NULL);
 	gpio_request(GPIOE(14), NULL);
 	gpio_request(GPIOE(15), NULL);
-	gpio_direction_output(GPIOE(12), 0);
-	gpio_direction_output(GPIOE(13), 0);
-	gpio_direction_output(GPIOE(14), 0);
-	gpio_direction_output(GPIOE(15), 1);
+	MOSI_DATA_RESET;
+	MOSI_REG_RESET;
+	SCK_RESET;
+	CSN_RESET;
 }
 
 void spi_reg_write_word(unsigned int data)
@@ -322,6 +327,10 @@ static long	video_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			bsp_csi_init();
 			bsp_csi_enable_module();
 			flush_cache_all();
+			MOSI_DATA_RESET;
+			MOSI_REG_RESET;
+			SCK_RESET;
+			CSN_RESET;
 			break;
 		case 4:
 			bsp_csi_disable_module();
