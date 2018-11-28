@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "Scan.h"
 
 extern int Y_RTable[256], Y_GTable[256], Y_BTable[256];
@@ -11,14 +12,27 @@ struct timeval tv_scan1, tv_scan2;
 
 void ScanTimeSet(void)
 {
+    struct timeval tv;
     gettimeofday(&tv_scan1, NULL);
-    PR("scan sec:%lu, usec:%lu\n", tv_scan1.tv_sec, tv_scan1.tv_usec);
+    usleep(10);
+    gettimeofday(&tv, NULL);
+    if(timercmp(&tv, &tv_scan1, <))
+        tv_scan1 = tv;
+    tv_scan2 = tv_scan1;
+    PR("Scan sec:%lu, usec:%lu\n", tv_scan1.tv_sec, tv_scan1.tv_usec);
 }
 
 long ScanLinesGet(int dpi, int depth)
 {
     __time_t scanTime;
-    gettimeofday(&tv_scan2, NULL);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    while((tv.tv_sec - tv_scan2.tv_sec > 2) || (tv_scan2.tv_sec - tv.tv_sec > 2)) {
+        gettimeofday(&tv, NULL);
+        PR("Error in getting time.\n");
+        usleep(10);
+    }
+    tv_scan2 = tv;
     scanTime = (tv_scan2.tv_sec - tv_scan1.tv_sec) * 1000000 + tv_scan2.tv_usec - tv_scan1.tv_usec;
 
     switch (dpi) {
@@ -34,6 +48,12 @@ long ScanLinesGet(int dpi, int depth)
         default:
             return 0;
     }
+}
+
+void ScanTimeShow(void)
+{
+    __time_t scanTime = (tv_scan2.tv_sec - tv_scan1.tv_sec) * 1000000 + tv_scan2.tv_usec - tv_scan1.tv_usec;;
+    PR("scan sec:%lu, usec:%lu, scan time:%lu\n", tv_scan2.tv_sec, tv_scan2.tv_usec, scanTime);
 }
 
 int CompressProcessPrepare(unsigned char page, ConfigMessageTypeDef *ConfigMessage, CompressProcessTypeDef *CompressProcess, int videoPortOffset)

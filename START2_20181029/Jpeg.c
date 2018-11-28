@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "Jpeg.h"
 
 void JpegInitialize(struct jpeg_compress_struct *comp, struct jpeg_error_mgr *err, unsigned char **dst, unsigned long *length)
@@ -32,6 +33,7 @@ void JpegStart(struct jpeg_compress_struct *comp, ImageAttributionsTypeDef *attr
 void JpegReset(struct jpeg_compress_struct *comp, struct jpeg_error_mgr *err, unsigned char **dst, unsigned long *length)
 {
     jpeg_destroy_compress(comp);
+    free(*dst);
     *dst = NULL;
     *length = 0;
     JpegInitialize(comp, err, dst, length);

@@ -389,16 +389,18 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                 CompressProcess.scanLines = 0;
                 CompressProcess.shiftLines = 0;
                 CompressProcess.compressLines = 0;
-                //CompressProcess.imagePosition = originalImage + videoPortOffset;
                 CompressProcess.imagePosition = originalImage;
                 JpegStart(&JPEGCompressOne, &CompressProcess.imageAttr);
                 pthread_create(&thread, NULL, (void*)ThreadSendData, NULL);
+                pthread_detach(thread);
 
                 while (1) {
                     /* Shift lines to the queue, while lines scanned are more than lines shifted. */
-                    CompressProcess.scanLines =  ScanLinesGet(CompressProcess.imageAttr.dpi, CompressProcess.imageAttr.depth);
-                    if(CompressProcess.scanLines > 8000)
-                        PR("error, lines: %lu", CompressProcess.scanLines);
+                    CompressProcess.scanLines = ScanLinesGet(CompressProcess.imageAttr.dpi, CompressProcess.imageAttr.depth);
+                    if(CompressProcess.scanLines > 8000) {
+                        ScanTimeShow();
+                        PR("Error, lines: %lu", CompressProcess.scanLines);
+                    }
 
                     while (CompressProcess.scanLines > CompressProcess.shiftLines + 60) {
                         if (CompressProcess.shiftLines >= CompressProcess.maxScanLines)
@@ -420,7 +422,7 @@ int MainProcess(int dpi, char color, int videoPortOffset)
                     }
 
                     /* Compress lines from the queue, if lines shifted are more than lines compressed. */
-                    if (CompressProcess.shiftLines >= CompressProcess.compressLines) {
+                    if (CompressProcess.shiftLines > CompressProcess.compressLines) {
                         if (!list_empty(&queueHead1)) {
                             shiftPicture = list_entry(queueHead1.next, struct list_shift_picture, queue);
                             if ((CompressProcess.compressLines >= CompressProcess.imageAttr.topEdge) && (CompressProcess.compressLines < CompressProcess.imageAttr.bottomEdge)) {
@@ -619,15 +621,15 @@ int MainProcess(int dpi, char color, int videoPortOffset)
 void *ThreadSendData(void)
 {
     unsigned int spiLength = 0;
-    const int delayTime = 1000;
-    struct jpeg_destination_mgr mem_dst;
+    const int delayTime = 1200;
+    struct jpeg_destination_mgr jpegDstMgr;
     PR("Hello world, here's thread!\n");
 
     /* Send jpeg data of page one */
     while (CompressProcess.step == COMPRESS_STEP_P1_ENCODE) {
         pthread_mutex_lock(&sendPicture1Mutex);
-        mem_dst = *JPEGCompressOne.dest;
-        mem_dst.term_destination(&JPEGCompressOne);
+        jpegDstMgr = *JPEGCompressOne.dest;
+        jpegDstMgr.term_destination(&JPEGCompressOne);
         if (JpegLengthOne >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationOne + spiLength, 512);
             spiLength += 512;
@@ -675,8 +677,8 @@ void *ThreadSendData(void)
     sem_wait(&scanSem);
     while (CompressProcess.step == COMPRESS_STEP_P2_ENCODE) {
         pthread_mutex_lock(&sendPicture2Mutex);
-        mem_dst = *JPEGCompressTwo.dest;
-        mem_dst.term_destination(&JPEGCompressTwo);
+        jpegDstMgr = *JPEGCompressTwo.dest;
+        jpegDstMgr.term_destination(&JPEGCompressTwo);
         if (JpegLengthTwo >= spiLength + 5120) {
             KernelSPISendPackage(JPEGDestinationTwo + spiLength, 512);
             spiLength += 512;
