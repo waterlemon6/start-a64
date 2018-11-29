@@ -8,7 +8,7 @@
  * 1 - DEBUG VERSION. PRINT SYSTEM INFORMATION.
  * 2 - RELEASE VERSION. PRINT NOTHING.
  */
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 2
 
 #if DEBUG_LEVEL <= 1
 #define PR(...) printf(__VA_ARGS__)
